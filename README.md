@@ -1,5 +1,8 @@
 This is a demo for using SSD1322 with micropython.<br/>
-Tested on esp32(LOLIN32 Lite) and stm32f411ce(WeAct STM32F411CEU6). 
+Tested on esp32(LOLIN32 Lite) and stm32f411ce(WeAct STM32F411CEU6). <br/>
+
+The outline is from https://github.com/mcauser/micropython-ssd1327 <br/>
+init sequence is from https://github.com/JamesHagerman/Jamis_SSD1322 <br/>
 
 <table>
 <tr><td><b>ssd1322</b></td><td><b>stm32f411ce</b></td></tr>
