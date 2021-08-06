@@ -1,56 +1,13 @@
 """
-MicroPython SSD1327 OLED I2C driver
-https://github.com/mcauser/micropython-ssd1327
-
-MIT License
-Copyright (c) 2017 Mike Causer
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+outline: https://github.com/mcauser/micropython-ssd1327
+init sequence/write buffer: https://github.com/JamesHagerman/Jamis_SSD1322
+other: SSD1322 Advance Information 480 x 128, Dot Matrix High Power OLED/PLED Segment/Common Driver with Controller 
+       (9 COMMAND TABLE)  https://www.newhavendisplay.com/resources_dataFiles/datasheets/OLEDs/SSD1322.pdf
 """
-
-__version__ = '1.1.1'
+__version__ = '0.1'
 
 import time
-from micropython import const
 import framebuf
-
-# commands
-SET_COL_ADDR          = const(0x15)
-SET_SCROLL_DEACTIVATE = const(0x2E)
-SET_ROW_ADDR          = const(0x75)
-SET_CONTRAST          = const(0x81)
-SET_SEG_REMAP         = const(0xA0)
-SET_DISP_START_LINE   = const(0xA1)
-SET_DISP_OFFSET       = const(0xA2)
-SET_DISP_MODE         = const(0xA4) # 0xA4 normal, 0xA5 all on, 0xA6 all off, 0xA7 when inverted
-SET_MUX_RATIO         = const(0xA8)
-SET_FN_SELECT_A       = const(0xAB)
-SET_DISP              = const(0xAE) # 0xAE power off, 0xAF power on
-SET_PHASE_LEN         = const(0xB1)
-SET_DISP_CLK_DIV      = const(0xB3)
-SET_SECOND_PRECHARGE  = const(0xB6)
-SET_GRAYSCALE_TABLE   = const(0xB8)
-SET_GRAYSCALE_LINEAR  = const(0xB9)
-SET_PRECHARGE         = const(0xBC)
-SET_VCOM_DESEL        = const(0xBE)
-SET_FN_SELECT_B       = const(0xD5)
-SET_COMMAND_LOCK      = const(0xFD)
 
 class SSD1322:
     def __init__(self, width=256, height=64):
@@ -143,64 +100,35 @@ class SSD1322:
         self.write_data(self.buffer)
 
     def poweroff(self):
-        self.write_cmd(SET_FN_SELECT_A)
+        self.write_cmd(0xAB)
         self.write_data(0x00) # Disable internal VDD regulator, to save power
-        self.write_cmd(SET_DISP)
+        self.write_cmd(0xAE)
 
     def poweron(self):
-        self.write_cmd(SET_FN_SELECT_A)
+        self.write_cmd(0xAB)
         self.write_data(0x01) # Enable internal VDD regulator
-        self.write_cmd(SET_DISP | 0x01)
+        self.write_cmd(0xAF)
 
     def contrast(self, contrast):
-        self.write_cmd(SET_CONTRAST)
-        self.write_data(contrast) # 0-255
+        self.write_cmd(0x81)
+        self.write_data(0x81) # 0-255
 
     def rotate(self, rotate):
-        self.poweroff()
-        time.sleep_ms(5)
-        self.write_cmd(SET_DISP_OFFSET)
-        self.write_cmd(self.height if rotate else self.offset)
-        self.write_cmd(SET_SEG_REMAP)
-        self.write_cmd(0x42 if rotate else 0x51)
-        self.poweron()
-        time.sleep_ms(5)
+        self.write_cmd(0xA0)
+        self.write_data(0x06 if rotate else 0x14)
+        self.write_data(0x11)
 
     def invert(self, invert):
-        self.write_cmd(SET_DISP_MODE | (invert & 1) << 1 | (invert & 1)) # 0xA4=Normal, 0xA7=Inverted
+        self.write_cmd(0xA4 | (invert & 1) << 1 | (invert & 1)) # 0xA4=Normal, 0xA7=Inverted
 
-    '''
-  // Set column address: Set_Column_Address(0x00, MAXCOLS-1);
-  ssd1322_command1(0x15);
-  // Each Column address holds 4 horizontal pixels worth of data
-  const uint16_t Col0Off = 0x70;
-  const uint16_t ColDiv  =    4;
-  ssd1322_data1( (Col0Off+0x00)/ColDiv );
-  ssd1322_data1( (Col0Off+WIDTH-1)/ColDiv );
-
-  // Set row address: Set_Row_Address(0x00, MAXROWS-1);
-  ssd1322_command1(0x75);
-  ssd1322_data1(0x00);
-  ssd1322_data1(HEIGHT-1);
-  
-  // Enable writing into MCU RAM: Set_Write_RAM();
-  ssd1322_command1(0x5C);
-
-  uint16_t count = WIDTH * ((HEIGHT) / 2);
-  // serial_println(count);
-  uint8_t *ptr   = buffer;
-  SSD1322_MODE_DATA
-  // while(count--) SPIwrite(*ptr++);
-  spi->transfer(buffer,count); (void) ptr;
-    '''
     def show(self):
         offset=(480-self.width)//2
         col_start=offset//4
         col_end=col_start+self.width//4-1
-        self.write_cmd(SET_COL_ADDR)
+        self.write_cmd(0x15)
         self.write_data(col_start)
         self.write_data(col_end)
-        self.write_cmd(SET_ROW_ADDR)
+        self.write_cmd(0x75)
         self.write_data(0)
         self.write_data(self.height-1)
         self.write_cmd(0x5c)
@@ -231,30 +159,6 @@ class SSD1322:
     def write_data(self):
         raise NotImplementedError
 
-'''
-PA1     22     
-PA2     19
-PA3     23
---      18
-PA5     5
---      17
-PA7     16
-
-#define PIN_DC       PA1  // DC: HIGH=Data, LOW=Command
-#define PIN_CS       PA2  // Chip Select
-#define PIN_RES      PA3 // Reset: HIGH during operation, LOW triggers reset)
-SCK     PA5
-MOSI    PA7
-
-import time
-import math
-spi = SPI(2, polarity=0, phase=0, sck=Pin(5), mosi=Pin(16), miso=Pin(17))
-# cs--25 dc--26 rst--27 mosi--14 sck--12 miso--13-no_need
-# def __init__( self, spi, aDC, aReset, aCS) :
-tft=TFT(spi,26,27,25)
-
-'''
-
 class SSD1322_SPI(SSD1322):
     def __init__(self, width, height, spi, dc,cs,res):
         self.spi = spi
@@ -275,13 +179,10 @@ class SSD1322_SPI(SSD1322):
         '''Write given command to the device.'''
         self.dc(0)
         self.cs(0)
-        if type(aCommand)==bytes or type(aCommand)==bytearray:
-            self.spi.write(aCommand)
-        else:
-            self.spi.write(bytearray([aCommand]))
+        self.spi.write(bytearray([aCommand]))
         self.cs(1)
 
-      #@micropython.native
+    #@micropython.native
     def write_data( self, aData ) :
         '''Write given data to the device.  This may be
            either a single int or a bytearray of values.'''
@@ -292,5 +193,3 @@ class SSD1322_SPI(SSD1322):
         else:
             self.spi.write(bytearray([aData]))
         self.cs(1)
-
-
