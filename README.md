@@ -7,6 +7,16 @@ init sequence is from https://github.com/JamesHagerman/Jamis_SSD1322 <br/>
 In fact, GS4 has been tested on ssd1322 in 2017:
 https://github.com/micropython/micropython/pull/2767
 
+
+<table>
+<tr><td><b>ssd1322</b></td><td><b>esp32</b></td></tr>
+<tr><td>DC</td><td>22</td></tr>
+<tr><td>CS</td><td>19</td></tr>
+<tr><td>RESET</td><td>23</td></tr>
+<tr><td>SCK</td><td>5</td></tr>
+<tr><td>MOSI</td><td>16</td></tr>
+</table>
+
 <table>
 <tr><td><b>ssd1322</b></td><td><b>stm32f411ce</b></td></tr>
 <tr><td>DC</td><td>PA1</td></tr>
@@ -17,12 +27,12 @@ https://github.com/micropython/micropython/pull/2767
 </table>
 
 <table>
-<tr><td><b>ssd1322</b></td><td><b>esp32</b></td></tr>
-<tr><td>DC</td><td>22</td></tr>
-<tr><td>CS</td><td>19</td></tr>
-<tr><td>RESET</td><td>23</td></tr>
-<tr><td>SCK</td><td>5</td></tr>
-<tr><td>MOSI</td><td>16</td></tr>
+<tr><td><b>ssd1322</b></td><td><b>rp2</b></td></tr>
+<tr><td>DC</td><td>GP2</td></tr>
+<tr><td>CS</td><td>GP5</td></tr>
+<tr><td>RESET</td><td>GP3</td></tr>
+<tr><td>SCK</td><td>GP6</td></tr>
+<tr><td>MOSI</td><td>GP7</td></tr>
 </table>
 
 test code on esp32:
@@ -54,5 +64,22 @@ disp.fill(15)
 disp.show()
 disp.fill(0)
 disp.line(0,0,255,63,15)
+disp.show()
+</pre>
+
+test code on rp2:
+<pre>
+from machine import Pin, SPI
+import ssd1322
+spi=SPI(0,8_000_000)
+cs=Pin(5,Pin.OUT)
+dc=Pin(2,Pin.OUT)
+res=Pin(3,Pin.OUT)
+disp=ssd1322.SSD1322_SPI(256,64,spi,dc,cs,res)
+disp.fill(0)
+disp.show()
+disp.line(0,0,255,63,15)
+disp.show()
+disp.text('hello',100,30,15)
 disp.show()
 </pre>
